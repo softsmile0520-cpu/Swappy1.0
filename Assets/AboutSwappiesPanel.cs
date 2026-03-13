@@ -39,6 +39,7 @@ public class AboutSwappiesPanel : MonoBehaviour
 
     public void ShowPanel(int a)
     {
+        b = 5;
         if (a == 0)
         {
             PointsCalImagesPos0.SetActive(true);
