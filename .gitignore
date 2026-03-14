@@ -1,0 +1,34 @@
+# Ignore everything
+*
+
+# Allow directories (so Git can traverse)
+!*/
+
+# Keep .gitignore tracked
+!.gitignore
+
+# Ignore everything inside Assets
+Assets/*
+
+# Track only .cs and .cs.meta under Assets (multiple depths)
+!Assets/*.cs
+!Assets/*.cs.meta
+!Assets/*/*.cs
+!Assets/*/*.cs.meta
+!Assets/*/*/*.cs
+!Assets/*/*/*.cs.meta
+!Assets/*/*/*/*.cs
+!Assets/*/*/*/*.cs.meta
+!Assets/*/*/*/*/*.cs
+!Assets/*/*/*/*/*.cs.meta
+
+# Unity / IDE (keep these ignored)
+Library/
+Temp/
+Obj/
+Build/
+Builds/
+Logs/
+UserSettings/
+MemoryCaptures/
+.vs/
