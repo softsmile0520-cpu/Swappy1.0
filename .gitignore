@@ -7,8 +7,6 @@
 # Keep .gitignore tracked
 !.gitignore
 
-# Ignore everything inside Assets
-Assets/*
 
 # Track only .cs and .cs.meta under Assets (multiple depths)
 !Assets/*.cs
