@@ -132,6 +132,8 @@ public class LoginSystem : MonoBehaviour
     }
     public void LoginPanelDestroy()
     {
+        if (Startgame.Instace != null)
+            Startgame.Instace.ShowProfileBarAfterLogin();
         Destroy(gameObject);
     }
 
