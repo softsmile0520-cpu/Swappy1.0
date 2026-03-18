@@ -65,9 +65,13 @@ public class PlayerProfileInfoTab : MonoBehaviour
         MasterTrophies.text = TrophiesHandler.Instance.MasterTrophies.Count(b => b.received == true) + "";
         KudoTrophies.text = TrophiesHandler.Instance.KudoTrophies.Count(b => b.received == true) + "";
 
-        CountryImage.sprite = GameConfigration.instance.countries[TrophiesHandler.Instance.trophyVariables["CountryIndex"]];
+        int ci = GameConfigration.instance.CountryUiIndex;
+        if (GameConfigration.instance.countries != null && GameConfigration.instance.countries.Count > 0)
+        {
+            CountryImage.sprite = GameConfigration.instance.countries[ci];
+            CountryName.text = GameConfigration.instance.countries[ci].name;
+        }
         PlayerName.text = TrophiesHandler.Instance.playerName;
-        CountryName.text = GameConfigration.instance.countries[TrophiesHandler.Instance.trophyVariables["CountryIndex"]].name;
 
         float c = PlayerPrefs.GetFloat("PicSize", 1);
         ProfilePic.transform.localScale = new Vector3(c, c, c);
@@ -126,8 +130,12 @@ public class PlayerProfileInfoTab : MonoBehaviour
         }
         KudoTrophies.text = TrophiesHandler.Instance.KudoTrophies.Count(b => b.received == true) + "";
         PlayerName.text = TrophiesHandler.Instance.playerName;
-        CountryName.text = GameConfigration.instance.countries[TrophiesHandler.Instance.trophyVariables["CountryIndex"]].name;
-        CountryImage.sprite = GameConfigration.instance.countries[TrophiesHandler.Instance.trophyVariables["CountryIndex"]];
+        int ci2 = GameConfigration.instance.CountryUiIndex;
+        if (GameConfigration.instance.countries != null && GameConfigration.instance.countries.Count > 0)
+        {
+            CountryName.text = GameConfigration.instance.countries[ci2].name;
+            CountryImage.sprite = GameConfigration.instance.countries[ci2];
+        }
         float c = PlayerPrefs.GetFloat("PicSize", 1);
         ProfilePic.transform.localScale = new Vector3(c, c, c);
         ProfilePic.sprite = GameConfigration.instance.ProfilePic;

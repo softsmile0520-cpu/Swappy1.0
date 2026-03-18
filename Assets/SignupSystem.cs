@@ -1,11 +1,6 @@
-using System.Collections;
-using System.Collections.Generic;
-using System.Collections;
-using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
 public class SignupSystem : MonoBehaviour
 {
@@ -89,18 +84,9 @@ public class SignupSystem : MonoBehaviour
             return;
         }
 
-        int countryIdx = GameConfigration.instance != null
-            ? GameConfigration.instance.CountryIndex
-            : TrophiesHandler.Instance.trophyVariables["CountryIndex"];
-        string countryName = GameConfigration.instance != null && countryIdx >= 0 && countryIdx < GameConfigration.instance.countries.Length
-            ? GameConfigration.instance.countries[countryIdx].name
-            : "";
-
         PlayerPrefs.SetString(email + "_email", email);
-        PlayerPrefs.SetString(email + "_country", countryName);
         PlayerPrefs.SetString(email + "_playerName", playerName);
         PlayerPrefs.SetString(email + "_password", password);
-        TrophiesHandler.Instance.trophyVariables["CountryIndex"] = countryIdx;
         PlayerPrefs.Save();
 
         TrophiesHandler.Instance.playerName = playerName;

@@ -92,7 +92,6 @@ public class LoginSystem : MonoBehaviour
                 feedbackText.text = "Login successful!";
                 feedbackText.color = defaultColor; // Reset feedback text to default color on success
 
-                TrophiesHandler.Instance.trophyVariables["CountryIndex"] = GameConfigration.instance.CountryIndex;
                 PlayerPrefs.SetInt("LoggedIn", 1);
                 // Handle "Remember Me" functionality
                 if (rememberMeToggle.isOn)

@@ -70,7 +70,6 @@ public class TrophiesHandler : MonoBehaviour
         { "TotalXpTM", 0 },
         { "LeastSwappies", 0 },
         { "LeastSwappiesTM", 0 },
-        { "CountryIndex" ,0},
         { "2-PlayerMP" ,0},
         { "3-PlayerMP" ,0},
         { "4-PlayerMP" ,0},
@@ -100,6 +99,12 @@ public class TrophiesHandler : MonoBehaviour
     private void Start()
     {
         Instance = this;
+
+        if (trophyVariables.ContainsKey("CountryIndex"))
+        {
+            trophyVariables.Remove("CountryIndex");
+            SaveData();
+        }
 
         //LoadFiles();
         //LoadDataInRelatedLists();

@@ -19,7 +19,6 @@ public class Startgame : MonoBehaviour
         if (profileBar != null)
             profileBar.SetActive(false);
         Invoke(nameof(SetPlayerData), 0.5f);
-        GameConfigration.instance.CountryIndex = TrophiesHandler.Instance.trophyVariables["CountryIndex"];
         Invoke(nameof(LoginPanelOn), 1f);
     }
 

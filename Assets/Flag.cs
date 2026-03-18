@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -10,48 +8,26 @@ public class Flag : MonoBehaviour
 
     private void Start()
     {
-        if (CountryIndex == TrophiesHandler.Instance.trophyVariables["CountryIndex"])
-        {
-            CheckMark.SetActive(true);
-        }
-        else
-        {
+        if (CheckMark != null)
             CheckMark.SetActive(false);
-        }
     }
-    
+
     public void CountrySelected()
     {
         if (Startgame.Instace.n == 1)
         {
-            GameConfigration.instance.CountryIndex = CountryIndex;
-            CheckMark.SetActive(true);
-            for (int i = 0; i < CountryPanel.instance.flagList.Count; i++)
+            if (SettingPanel.instance != null && GameConfigration.instance != null &&
+                GameConfigration.instance.countries != null &&
+                CountryIndex >= 0 && CountryIndex < GameConfigration.instance.countries.Count)
             {
-                if (CountryPanel.instance.flagList[i] != this)
-                {
-                    CheckMark.SetActive(false);
-                }
+                SettingPanel.instance.CountryName.text = GameConfigration.instance.countries[CountryIndex].name;
+                SettingPanel.instance.CountryImage.sprite = GameConfigration.instance.countries[CountryIndex];
             }
-            SettingPanel.instance.CountryName.text = GameConfigration.instance.countries[CountryIndex].name;
-            SettingPanel.instance.CountryImage.sprite = this.GetComponent<Image>().sprite;
-            GameConfigration.instance.CountryIndex = CountryIndex;
             CountryPanel.instance.backPressed();
         }
         else if (Startgame.Instace.n == 2)
         {
-            GameConfigration.instance.CountryIndex = CountryIndex;
-            CheckMark.SetActive(true);
-            for (int i = 0; i < CountryPanel.instance.flagList.Count; i++)
-            {
-                if (CountryPanel.instance.flagList[i] != this)
-                {
-                    CountryPanel.instance.flagList[i].CheckMark.SetActive(false);
-                }
-            }
-            GameConfigration.instance.CountryIndex = CountryIndex;
             CountryPanel.instance.backPressed();
         }
     }
-   
 }

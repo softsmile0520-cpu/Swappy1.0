@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -61,8 +61,12 @@ public class SettingPanel : MonoBehaviour
         playerInfo = Instantiate(PlayerInfoTabPrefab, ProfileBar);
         InBank.text = TrophiesHandler.Instance.trophyVariables["Coins"] + "";
         logoDisplay.sprite = GameConfigration.instance.ProfilePic;
-        CountryImage.sprite = GameConfigration.instance.countries[TrophiesHandler.Instance.trophyVariables["CountryIndex"]];
-        CountryName.text = GameConfigration.instance.countries[TrophiesHandler.Instance.trophyVariables["CountryIndex"]].name;
+        int ci = GameConfigration.instance.CountryUiIndex;
+        if (GameConfigration.instance.countries != null && GameConfigration.instance.countries.Count > 0)
+        {
+            CountryImage.sprite = GameConfigration.instance.countries[ci];
+            CountryName.text = GameConfigration.instance.countries[ci].name;
+        }
     }
     public int p = 0;
     public void DisclaimerNameChange(int n)
@@ -73,15 +77,7 @@ public class SettingPanel : MonoBehaviour
         {
             if (p == 0)
             {
-                if (GameConfigration.instance.CountryIndex != TrophiesHandler.Instance.trophyVariables["CountryIndex"])
-                {
-                    CountryImageDisclaimer.gameObject.SetActive(true);
-                    CountryImageDisclaimer.sprite = CountryImage.sprite;
-                    DisclaimerTextCountry.text = "Would you like to Change Your Country Name To " + " " + CountryName.text + " for";
-                    DisclaimerPanel.SetActive(true);
-                }
-                else
-                    GameConfigration.instance.PlayerSound(27);
+                GameConfigration.instance.PlayerSound(27);
             }
             else if (p == 1)
             {
@@ -165,14 +161,6 @@ public class SettingPanel : MonoBehaviour
         GameConfigration.instance.PlayerSound(0);
         if (p == 0)
         {
-            if (TrophiesHandler.Instance.trophyVariables["Coins"] >= 1000)
-            {
-                GameConfigration.instance.PlayerSound(31);
-                //PlayerPrefs.SetString("CountryName", CountryName.text);
-                TrophiesHandler.Instance.trophyVariables["CountryIndex"] = GameConfigration.instance.CountryIndex;
-                TrophiesHandler.Instance.trophyVariables["Coins"] = TrophiesHandler.Instance.trophyVariables["Coins"] - 1000;
-                playerInfo.AssignPlayerData();
-            }
         }
         else if (p == 1)
         {

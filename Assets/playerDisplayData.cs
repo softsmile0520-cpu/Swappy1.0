@@ -85,8 +85,12 @@ public class playerDisplayData : MonoBehaviour
                     AISwappyName.gameObject.SetActive(false);
                     PlayerName.gameObject.SetActive(true);
                     PlayerName.text = TrophiesHandler.Instance.playerName;
-                    Country.sprite = GameConfigration.instance.countries[TrophiesHandler.Instance.trophyVariables["CountryIndex"]];
-                    Countryname.text = GameConfigration.instance.countries[TrophiesHandler.Instance.trophyVariables["CountryIndex"]].name;
+                    int ci = GameConfigration.instance.CountryUiIndex;
+                    if (GameConfigration.instance.countries != null && GameConfigration.instance.countries.Count > 0)
+                    {
+                        Country.sprite = GameConfigration.instance.countries[ci];
+                        Countryname.text = GameConfigration.instance.countries[ci].name;
+                    }
                     profilePic.sprite = GameConfigration.instance.ProfilePic;
                     float a = PlayerPrefs.GetFloat("PicSize", 1);
                     profilePic.transform.localScale = new Vector3(a, a, a);

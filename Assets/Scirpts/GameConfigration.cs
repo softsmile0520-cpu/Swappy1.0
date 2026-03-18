@@ -51,7 +51,9 @@ public class GameConfigration : MonoBehaviour
     public PlayerData playerData = new PlayerData();
 
     public List<Sprite> countries;
-    public int CountryIndex = 0;
+
+    /// <summary>Country picker removed; UI uses the first country asset when present.</summary>
+    public int CountryUiIndex => countries != null && countries.Count > 0 ? 0 : 0;
 
     public const string DateKey = "SavedDate";
     private void Awake()
