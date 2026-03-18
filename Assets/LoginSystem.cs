@@ -128,6 +128,7 @@ public class LoginSystem : MonoBehaviour
     public void SignupBtn()
     {
         SignupSystem.ShowUI();
+
         // Destroy(gameObject);
     }
     public void LoginPanelDestroy()

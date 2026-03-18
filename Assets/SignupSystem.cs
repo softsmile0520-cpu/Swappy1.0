@@ -1,5 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections;
+using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using TMPro;
 using UnityEngine;
@@ -9,107 +11,101 @@ public class SignupSystem : MonoBehaviour
 {
     public static SignupSystem instance;
     public TMP_InputField emailInputField;
-    public TMP_InputField confirmEmailInputField;
-    public TextMeshProUGUI countryInputField;
     public TMP_InputField playerNameInputField;
     public TMP_InputField passwordInputField;
     public TextMeshProUGUI feedbackText;
-    public TextMeshProUGUI CountryName;
-    public Image CountryImage;
-    // Email validation regex pattern
-    private string emailPattern = @"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$";
 
-    // Password validation pattern (at least 8 characters, 1 letter, and 1 number)
+    private string emailPattern = @"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$";
     private string passwordPattern = @"^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$";
+
     private void Awake()
     {
         instance = this;
     }
+
+    private void OnDestroy()
+    {
+        if (instance == this)
+            instance = null;
+    }
+
     public static SignupSystem ShowUI()
     {
         if (instance == null)
         {
-            GameObject obj = Instantiate(Resources.Load("SignUpPanel")) as GameObject;
-
-            obj.gameObject.transform.SetParent(GameObject.FindGameObjectWithTag("MainCanvas").transform, false);
-
+            GameObject obj = Instantiate(Resources.Load("SignInPanel")) as GameObject;
+            obj.transform.SetParent(GameObject.FindGameObjectWithTag("MainCanvas").transform, false);
             instance = obj.GetComponent<SignupSystem>();
-            instance.transform.SetSiblingIndex(3);
+            instance.transform.SetAsLastSibling();
         }
 
         return instance;
     }
-    private void Start()
+
+    public void DestroyPanel()
     {
-        CountryImage.sprite = GameConfigration.instance.countries[TrophiesHandler.Instance.trophyVariables["CountryIndex"]];
-        CountryName.text = GameConfigration.instance.countries[TrophiesHandler.Instance.trophyVariables["CountryIndex"]].name;
+        Destroy(gameObject);
     }
+
+    /// <summary>Alias for close/back buttons wired in the prefab.</summary>
     public void Destroy()
     {
-        Destroy(gameObject);    
+        DestroyPanel();
     }
-    public void OpenCountryPanel()
-    {
-        Startgame.Instace.n = 2;
-        GameConfigration.instance.PlayerSound(0);
-        CountryPanel.ShowUI();
-    }
+
     public void Register()
     {
-        string email = emailInputField.text;
-        string confirmEmail = confirmEmailInputField.text;
-        string country = countryInputField.text;
-        string playerName = playerNameInputField.text;
-        string password = passwordInputField.text;
-        
-        // Check if any field is empty
-        if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(confirmEmail) || string.IsNullOrEmpty(country) || string.IsNullOrEmpty(playerName) || string.IsNullOrEmpty(password))
+        string email = emailInputField != null ? emailInputField.text.Trim() : "";
+        string playerName = playerNameInputField != null ? playerNameInputField.text.Trim() : "";
+        string password = passwordInputField != null ? passwordInputField.text : "";
+
+        if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(playerName) || string.IsNullOrEmpty(password))
         {
-            feedbackText.text = "All fields must be filled in.";
+            feedbackText.text = "Please enter email, player name, and password.";
             return;
         }
 
-        // Check if emails match
-        if (email != confirmEmail)
+        if (playerName.Length < 2)
         {
-            feedbackText.text = "Emails do not match!";
+            feedbackText.text = "Player name must be at least 2 characters.";
             return;
         }
 
-        // Validate email format
         if (!Regex.IsMatch(email, emailPattern))
         {
-            feedbackText.text = "Invalid email format! Please use a format like abc@abc.com.";
+            feedbackText.text = "Invalid email format. Use something like name@example.com.";
             return;
         }
 
-        // Validate password strength
         if (!Regex.IsMatch(password, passwordPattern))
         {
-            feedbackText.text = "Password must be at least 8 characters long, contain at least one letter and one number.";
+            feedbackText.text = "Password must be at least 8 characters with at least one letter and one number.";
             return;
         }
 
-        // Check if email is already registered
         if (PlayerPrefs.HasKey(email + "_email"))
         {
-            feedbackText.text = "This email is already registered. Please use another email or log in.";
+            feedbackText.text = "This email is already registered. Log in or use another email.";
             return;
         }
 
-        // Save the registration details using the email as the key
+        int countryIdx = GameConfigration.instance != null
+            ? GameConfigration.instance.CountryIndex
+            : TrophiesHandler.Instance.trophyVariables["CountryIndex"];
+        string countryName = GameConfigration.instance != null && countryIdx >= 0 && countryIdx < GameConfigration.instance.countries.Length
+            ? GameConfigration.instance.countries[countryIdx].name
+            : "";
+
         PlayerPrefs.SetString(email + "_email", email);
-        PlayerPrefs.SetString(email + "_country", country);
+        PlayerPrefs.SetString(email + "_country", countryName);
         PlayerPrefs.SetString(email + "_playerName", playerName);
         PlayerPrefs.SetString(email + "_password", password);
-        TrophiesHandler.Instance.trophyVariables["CountryIndex"] = GameConfigration.instance.CountryIndex;
+        TrophiesHandler.Instance.trophyVariables["CountryIndex"] = countryIdx;
         PlayerPrefs.Save();
 
-        print(playerNameInputField.text);
-          TrophiesHandler.Instance.playerName = playerNameInputField.text;
-        print(playerNameInputField.text);   
+        TrophiesHandler.Instance.playerName = playerName;
         feedbackText.text = "Registration successful!";
-        Invoke("Destroy", 1f);
+        Invoke(nameof(DestroyPanel), 1f);
     }
 
     public void ClearPlayerPrefs()

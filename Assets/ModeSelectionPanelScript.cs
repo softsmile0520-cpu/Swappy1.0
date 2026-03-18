@@ -67,9 +67,11 @@ public class ModeSelectionPanelScript : MonoBehaviour
         AboutSwappiesPanel.ShowUI();
         //backPressed();
     }
-    public void SettingPanel() 
+    /// <summary>Menu Settings / OPTIONS — opens sound & volume panel.</summary>
+    public void SettingPanel()
     {
-
+        GameConfigration.instance.PlayerSound(0);
+        SoundsPanel.ShowUI();
     }
     public void TimePanel()
     {

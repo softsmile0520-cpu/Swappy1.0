@@ -38,7 +38,7 @@ public class Flag : MonoBehaviour
             GameConfigration.instance.CountryIndex = CountryIndex;
             CountryPanel.instance.backPressed();
         }
-        else if (Startgame.Instace.n == 2) 
+        else if (Startgame.Instace.n == 2)
         {
             GameConfigration.instance.CountryIndex = CountryIndex;
             CheckMark.SetActive(true);
@@ -46,11 +46,9 @@ public class Flag : MonoBehaviour
             {
                 if (CountryPanel.instance.flagList[i] != this)
                 {
-                    CheckMark.SetActive(false);
+                    CountryPanel.instance.flagList[i].CheckMark.SetActive(false);
                 }
             }
-            SignupSystem.instance.CountryName.text = GameConfigration.instance.countries[CountryIndex].name;
-            SignupSystem.instance.CountryImage.sprite = this.GetComponent<Image>().sprite;
             GameConfigration.instance.CountryIndex = CountryIndex;
             CountryPanel.instance.backPressed();
         }
