@@ -93,6 +93,7 @@ public class LoginSystem : MonoBehaviour
                 feedbackText.color = defaultColor; // Reset feedback text to default color on success
 
                 PlayerPrefs.SetInt("LoggedIn", 1);
+                PlayerPrefs.SetInt("IsGuest", 0);
                 // Handle "Remember Me" functionality
                 if (rememberMeToggle.isOn)
                 {
@@ -127,8 +128,22 @@ public class LoginSystem : MonoBehaviour
     public void SignupBtn()
     {
         SignupSystem.ShowUI();
+    }
 
-        // Destroy(gameObject);
+    /// <summary>PLAY AS GUEST — enter game with no account: name "Guest", 0 XP, no medals. Progress is not saved.</summary>
+    public void PlayAsGuest()
+    {
+        PlayerPrefs.SetInt("IsGuest", 1);
+        PlayerPrefs.SetInt("LoggedIn", 1);
+        PlayerPrefs.Save();
+
+        if (TrophiesHandler.Instance != null)
+            TrophiesHandler.Instance.ResetToGuestState();
+
+        if (ModeSelectionPanelScript.instance != null && ModeSelectionPanelScript.instance.playerInfo != null)
+            ModeSelectionPanelScript.instance.playerInfo.AssignPlayerData();
+
+        LoginPanelDestroy();
     }
     public void LoginPanelDestroy()
     {
@@ -142,6 +157,16 @@ public class LoginSystem : MonoBehaviour
         PlayerPrefs.DeleteAll();
         feedbackText.text = "PlayerPrefs cleared!";
         feedbackText.color = defaultColor; // Reset feedback text color
+    }
+
+    /// <summary>QUIT — closes the app in builds; stops Play mode in the Editor.</summary>
+    public void QuitGame()
+    {
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
+        Application.Quit();
+#endif
     }
 
 

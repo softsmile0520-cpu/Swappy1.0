@@ -99,7 +99,8 @@ public class TrophiesHandler : MonoBehaviour
     private void Start()
     {
         Instance = this;
-
+        if (PlayerPrefs.GetInt("IsGuest", 0) == 1)
+            ResetToGuestState();
         if (trophyVariables.ContainsKey("CountryIndex"))
         {
             trophyVariables.Remove("CountryIndex");
@@ -162,6 +163,8 @@ public class TrophiesHandler : MonoBehaviour
     }
     public void SaveData(bool UpdateProfeile = false,PlayerProfileInfoTab playerInfo = null)
     {
+        if (PlayerPrefs.GetInt("IsGuest", 0) == 1)
+            return;
         SaveReceiveTrophies();
         if (UpdateProfeile)
         {
@@ -172,6 +175,72 @@ public class TrophiesHandler : MonoBehaviour
         PlayerPrefs.SetString("_playerName", playerName);
         PlayerPrefs.SetFloat("PicSize", PicSize);
     }
+
+    /// <summary>Resets to guest state: name "Guest", 0 XP, 0 coins/jems, no medals. Used when playing as guest.</summary>
+    public void ResetToGuestState()
+    {
+        playerName = "Guest";
+        trophyVariables = new Dictionary<string, int>()
+        {
+            { "TotalTrophies", 0 },
+            { "TotalTrophiesTM", 0 },
+            { "TotalDaysPlayed", 0 },
+            { "TotalDaysPlayedCar", 0 },
+            { "InviteAndGetTrophy", 0 },
+            { "TotalSwapOnBoardAfterWin", 0 },
+            { "TwoPGwithAtlest200p", 0 },
+            { "ThreePGwithAtlest300p", 0 },
+            { "FourPGwithAtlest400p", 0 },
+            { "TwoPGwithAtlest222p", 0 },
+            { "ThreePGwithAtlest333p", 0 },
+            { "FourPGwithAtlest444p", 0 },
+            { "Win2pGonline", 0 },
+            { "TwoPGwith15p", 0 },
+            { "threePGwith10p", 0 },
+            { "fourPGwith5p", 0 },
+            { "Win3PGonline", 0 },
+            { "Win4PGonline", 0 },
+            { "MaxSwappyCombo", 0 },
+            { "MaxSwappyComboTM", 0 },
+            { "DefeatOppInClassicM", 0 },
+            { "DefeatOppInClassicMTM", 0 },
+            { "DefeatOppInFastM", 0 },
+            { "DefeatOppInFastMTM", 0 },
+            { "DefeatOppInOnlineM", 0 },
+            { "DefeatOppInOnlineMTM", 0 },
+            { "DefeatOppInOfflineM", 0 },
+            { "DefeatOppInOfflineMTM", 0 },
+            { "DefeatOppInPowerM", 0 },
+            { "DefeatOppInPowerMTM", 0 },
+            { "TotalPlayedGames", 0 },
+            { "TotalPlayedGamesTM", 0 },
+            { "CompleteGameBefore1stJan2025", 0 },
+            { "CompleteGameBefore1stOct2024", 0 },
+            { "Betaversion", 1 },
+            { "CompleteGameBeforeBetaVersion", 0 },
+            { "purchaseSomethingInShop", 0 },
+            { "DoaMonthlyPayment", 0 },
+            { "Doa50DPurchase", 0 },
+            { "WinGamesfrom4th", 0 },
+            { "ReachXPpoints", 0 },
+            { "Coins", 0 },
+            { "Jems", 0 },
+            { "TotalXp", 0 },
+            { "TotalXpTM", 0 },
+            { "LeastSwappies", 0 },
+            { "LeastSwappiesTM", 0 },
+            { "2-PlayerMP", 0 },
+            { "3-PlayerMP", 0 },
+            { "4-PlayerMP", 0 },
+        };
+        for (int i = 0; i < KudoTrophies.Count; i++)
+            KudoTrophies[i].received = false;
+        for (int i = 0; i < MasterTrophies.Count; i++)
+            MasterTrophies[i].received = false;
+        for (int i = 0; i < GoatTrophies.Count; i++)
+            GoatTrophies[i].received = false;
+    }
+
     private void OnApplicationQuit()
     {
         SaveData();
