@@ -48,6 +48,12 @@ public class SignupSystem : MonoBehaviour
         DestroyPanel();
     }
 
+    /// <summary>Back button — closes this Sign In panel and returns to the previous step (Login panel).</summary>
+    public void BackToPreviousStep()
+    {
+        DestroyPanel();
+    }
+
     public void Register()
     {
         string email = emailInputField != null ? emailInputField.text.Trim() : "";
