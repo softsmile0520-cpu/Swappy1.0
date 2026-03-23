@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Text.RegularExpressions;
 using TMPro;
@@ -34,6 +35,13 @@ public class SettingPanel : MonoBehaviour
     public Image CountryImageDisclaimer;
     public TextMeshProUGUI DisclaimerTextCountry;
     public TextMeshProUGUI DisclaimerTextName;
+    /// <summary>Buying/Disclaimer panel — purchase price (2500 change name / 500 change picture). Often &quot;InBank (1)&quot;.</summary>
+    public TextMeshProUGUI disclaimerCoinCostText;
+    /// <summary>Buying panel path: question (1) / cost — same 2500 / 500 as above (assign or auto-found under DisclaimerPanel).</summary>
+    public TextMeshProUGUI buyingPanelQuestionCostText;
+    /// <summary>Buying/Disclaimer panel — player&apos;s current coin balance. Often &quot;InBank&quot; (distinct from main profile InBank).</summary>
+    public TextMeshProUGUI disclaimerInBankBalanceText;
+    /// <summary>Main profile UI — coins in bank (top bar).</summary>
     public TextMeshProUGUI InBank;
 
     [Tooltip("TMP for name validation errors (assign your 'Name Error' label here). If empty, auto-finds a child named 'Name Error'.")]
@@ -49,11 +57,11 @@ public class SettingPanel : MonoBehaviour
     public Texture2D PlaceholderTexture;
     public List<string> swearWords = new List<string>();
 
-    public const int NameChangeCostCoins = 1000;
+    public const int NameChangeCostCoins = 2500;
     /// <summary>Coin cost for profile picture change confirmation (separate from name change).</summary>
-    public const int ProfilePictureChangeCostCoins = 1000;
+    public const int ProfilePictureChangeCostCoins = 500;
     /// <summary>Coin cost to open upload picture panel.</summary>
-    public const int UploadPicturePanelCostCoins = 1000;
+    public const int UploadPicturePanelCostCoins = 500;
 
     public const string MsgNotEnoughCoins = "You don't have enough coins";
     public const string MsgNameFormat = "Use 3-16 characters with letters, numbers, or underscores only";
@@ -359,7 +367,9 @@ public class SettingPanel : MonoBehaviour
             }
 
             DisclaimerTextName.gameObject.SetActive(true);
-            DisclaimerTextName.text = "Would you like to Change Your Profile Name To " + " " + Name.text.Trim() + " for";
+            DisclaimerTextName.text =
+                "Would you like to Change Your Profile Name To " + Name.text.Trim() + " for " + NameChangeCostCoins + " coins?";
+            UpdateBuyingPanelCoinLabels(NameChangeCostCoins);
             DisclaimerPanel.SetActive(true);
             return;
         }
@@ -386,15 +396,154 @@ public class SettingPanel : MonoBehaviour
 
             CountryImageDisclaimer.gameObject.SetActive(true);
             CountryImageDisclaimer.sprite = logoDisplayImageSaved;
-            DisclaimerTextCountry.text = "Would you like to Change Your profile Picture for";
+            DisclaimerTextCountry.text =
+                "Would you like to Change Your profile Picture for " + ProfilePictureChangeCostCoins + " coins?";
+            UpdateBuyingPanelCoinLabels(ProfilePictureChangeCostCoins);
             DisclaimerPanel.SetActive(true);
         }
     }
+
+    /// <summary>Auto-wires InBank = balance, InBank (1) = price under DisclaimerPanel when references are left empty.</summary>
+    private void TryBindDisclaimerBuyingPanelInBankTexts()
+    {
+        if (DisclaimerPanel == null) return;
+
+        foreach (TextMeshProUGUI tmp in DisclaimerPanel.GetComponentsInChildren<TextMeshProUGUI>(true))
+        {
+            if (tmp.name == "InBank (1)" && disclaimerCoinCostText == null)
+                disclaimerCoinCostText = tmp;
+            else if (tmp.name == "InBank" && disclaimerInBankBalanceText == null)
+                disclaimerInBankBalanceText = tmp;
+        }
+    }
+
+    /// <summary>BuyingPanel / question (1) — same search path as the prefab hierarchy.</summary>
+    private Transform FindBuyingQuestion1Transform()
+    {
+        if (DisclaimerPanel == null) return null;
+
+        Transform scope = DisclaimerPanel.transform;
+        Transform buyingPanel = FindDeepChildByName(scope, "BuyingPanel");
+        if (buyingPanel != null)
+            scope = buyingPanel;
+
+        Transform question = FindDeepChildByName(scope, "question (1)");
+        if (question == null)
+            question = FindDeepChildByName(DisclaimerPanel.transform, "question (1)");
+
+        return question;
+    }
+
+    /// <summary>Auto-wires BuyingPanel / question (1) / cost when empty (matches common hierarchy).</summary>
+    private void TryBindBuyingPanelQuestionCostText()
+    {
+        if (buyingPanelQuestionCostText != null || DisclaimerPanel == null)
+            return;
+
+        Transform question = FindBuyingQuestion1Transform();
+        if (question == null)
+            return;
+
+        Transform costTr = question.Find("cost");
+        if (costTr == null)
+            costTr = FindDeepChildByName(question, "cost");
+
+        if (costTr != null)
+            buyingPanelQuestionCostText = costTr.GetComponent<TextMeshProUGUI>();
+    }
+
+    /// <summary>Leading price on a cost line (before TMP sprites / ?). Prefab may use 1000, 500, or 2500; picture flow must rewrite 2500 → 500.</summary>
+    private const string LeadingStalePricePattern = @"^\s*(1000|2500|500)\b";
+
+    /// <summary>
+    /// Prefab often has a second line (e.g. "2500 &lt;sprite&gt; ?" left from name-change layout) while picture flow needs 500.
+    /// TMP sprite tags break pure-numeric regex; replace leading 1000/2500/500 with the active <paramref name="purchaseCostCoins"/>.
+    /// </summary>
+    private void SyncAllQuestion1CostAmountTexts(int purchaseCostCoins)
+    {
+        Transform question = FindBuyingQuestion1Transform();
+        if (question == null) return;
+
+        string priceText = purchaseCostCoins.ToString(CultureInfo.InvariantCulture);
+
+        foreach (TextMeshProUGUI tmp in question.GetComponentsInChildren<TextMeshProUGUI>(true))
+        {
+            string raw = tmp.text;
+            if (string.IsNullOrEmpty(raw)) continue;
+
+            if (raw.Length <= 180 && Regex.IsMatch(raw, LeadingStalePricePattern))
+            {
+                tmp.text = Regex.Replace(raw, LeadingStalePricePattern, priceText);
+                continue;
+            }
+
+            string t = raw.Trim();
+            Match m = Regex.Match(t, @"^(\d{3,5})(\s*\??)?\s*$");
+            if (!m.Success) continue;
+
+            if (!int.TryParse(m.Groups[1].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int oldVal))
+                continue;
+
+            bool nameLooksLikeCost = tmp.name.IndexOf("cost", StringComparison.OrdinalIgnoreCase) >= 0
+                || tmp.name.IndexOf("price", StringComparison.OrdinalIgnoreCase) >= 0;
+            bool looksLikeStalePriceDefault = oldVal == 1000 || oldVal == 500 || oldVal == 2500;
+
+            if (!nameLooksLikeCost && !looksLikeStalePriceDefault)
+                continue;
+
+            string suffix = m.Groups[2].Success ? m.Groups[2].Value : "";
+            tmp.text = purchaseCostCoins.ToString(CultureInfo.InvariantCulture) + suffix;
+        }
+    }
+
+    /// <summary>Same stale price line may live outside question (1) but still under DisclaimerPanel.</summary>
+    private void FixStaleLeadingPriceUnderEntireDisclaimer(int purchaseCostCoins)
+    {
+        if (DisclaimerPanel == null) return;
+
+        string priceText = purchaseCostCoins.ToString(CultureInfo.InvariantCulture);
+
+        foreach (TextMeshProUGUI tmp in DisclaimerPanel.GetComponentsInChildren<TextMeshProUGUI>(true))
+        {
+            string raw = tmp.text;
+            if (string.IsNullOrEmpty(raw) || raw.Length > 180) continue;
+            if (!Regex.IsMatch(raw, LeadingStalePricePattern)) continue;
+
+            tmp.text = Regex.Replace(raw, LeadingStalePricePattern, priceText);
+        }
+    }
+
+    /// <summary>Buying panel: cost = 2500 (name) or 500 (picture); InBank = current player coins.</summary>
+    private void UpdateBuyingPanelCoinLabels(int purchaseCostCoins)
+    {
+        TryBindDisclaimerBuyingPanelInBankTexts();
+        TryBindBuyingPanelQuestionCostText();
+
+        if (disclaimerCoinCostText != null)
+            disclaimerCoinCostText.text = purchaseCostCoins.ToString();
+
+        if (buyingPanelQuestionCostText != null)
+            buyingPanelQuestionCostText.text = purchaseCostCoins.ToString();
+
+        SyncAllQuestion1CostAmountTexts(purchaseCostCoins);
+        FixStaleLeadingPriceUnderEntireDisclaimer(purchaseCostCoins);
+
+        int balance = TrophiesHandler.Instance != null ? TrophiesHandler.Instance.trophyVariables["Coins"] : 0;
+        if (disclaimerInBankBalanceText != null)
+            disclaimerInBankBalanceText.text = balance.ToString();
+    }
+
     public void CloseDisclaimer()
     {
         GameConfigration.instance.PlayerSound(0);
         CountryImageDisclaimer.gameObject.SetActive(false);
         DisclaimerTextName.gameObject.SetActive(false);
+        if (disclaimerCoinCostText != null)
+            disclaimerCoinCostText.text = "";
+        if (buyingPanelQuestionCostText != null)
+            buyingPanelQuestionCostText.text = "";
+        if (disclaimerInBankBalanceText != null)
+            disclaimerInBankBalanceText.text = "";
         DisclaimerPanel?.SetActive(false);
     }
     public void OpenCountryPanel()
@@ -460,7 +609,7 @@ public class SettingPanel : MonoBehaviour
         if (TrophiesHandler.Instance.trophyVariables["Coins"] >= UploadPicturePanelCostCoins)
         {
             UploadImagePanel.SetActive(true);
-        OtherThingsPanel.SetActive(false);
+            OtherThingsPanel.SetActive(false);
         }
         else
         {
@@ -500,81 +649,53 @@ public class SettingPanel : MonoBehaviour
         // Return the copy texture
         return copyTexture;
     }
+    /// <summary>Wired to the Upload Picture button — Editor/Windows/macOS use a file dialog; mobile uses the gallery.</summary>
     public void UploadImageButton()
     {
-        NativeGallery.GetImageFromGallery((path) =>
-        {
-            if (string.IsNullOrEmpty(path))
-                return;
-
-            // Save selected image path
-            PlayerPrefs.SetString("SelectedImagePath", path);
-            Debug.Log("Selected image path: " + path);
-
-            // Load image
-            Texture2D texture = NativeGallery.LoadImageAtPath(path);
-            if (texture == null)
-            {
-                Debug.Log("Failed to load image");
-                return;
-            }
-
-            // Make readable copy
-            Texture2D copyTexture = CopyTextureWithReadable(texture);
-
-            // Save image
-            byte[] imageData = copyTexture.EncodeToPNG();
-            string base64Image = Convert.ToBase64String(imageData);
-            PlayerPrefs.SetString("SavedImage", base64Image);
-            PlayerPrefs.Save();
-
-            // Apply to UI
-            logoDisplayImageSaved = Sprite.Create(
-                copyTexture,
-                new Rect(0, 0, copyTexture.width, copyTexture.height),
-                Vector2.zero
-            );
-
-            DecidingLogoPanel.sprite = logoDisplayImageSaved;
-
-        }, "Select an image", "image/*");
+        ProfileImageFilePicker.PickImageForProfile(ApplySelectedProfileImagePath);
     }
 
-    void OpenGalleryInternal()
+    /// <summary>Loads the chosen file from disk and updates the preview (works with PC paths and mobile gallery paths).</summary>
+    private void ApplySelectedProfileImagePath(string path)
     {
-        NativeGallery.GetImageFromGallery((path) =>
+        if (string.IsNullOrEmpty(path))
+            return;
+
+        PlayerPrefs.SetString("SelectedImagePath", path);
+        Debug.Log("Selected image path: " + path);
+
+        Texture2D texture = null;
+        try
         {
-            if (path == null)
-                return;
+            texture = NativeGallery.LoadImageAtPath(path);
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning("LoadImageAtPath failed: " + e.Message);
+            return;
+        }
 
-            PlayerPrefs.SetString("SelectedImagePath", path);
-            Debug.Log("Selected image path: " + path);
+        if (texture == null)
+        {
+            Debug.Log("Failed to load image");
+            return;
+        }
 
-            Texture2D texture = NativeGallery.LoadImageAtPath(path);
-            if (texture == null)
-            {
-                Debug.Log("Failed to load image");
-                return;
-            }
+        Texture2D copyTexture = CopyTextureWithReadable(texture);
+        Destroy(texture);
 
-            Texture2D copyTexture = CopyTextureWithReadable(texture);
+        byte[] imageData = copyTexture.EncodeToPNG();
+        string base64Image = Convert.ToBase64String(imageData);
+        PlayerPrefs.SetString("SavedImage", base64Image);
+        PlayerPrefs.Save();
 
-            byte[] imageData = copyTexture.EncodeToPNG();
-            string base64Image = Convert.ToBase64String(imageData);
-            PlayerPrefs.SetString("SavedImage", base64Image);
-            PlayerPrefs.Save();
+        logoDisplayImageSaved = Sprite.Create(
+            copyTexture,
+            new Rect(0, 0, copyTexture.width, copyTexture.height),
+            Vector2.zero
+        );
 
-            logoDisplayImageSaved = Sprite.Create(
-                copyTexture,
-                new Rect(0, 0, copyTexture.width, copyTexture.height),
-                Vector2.zero
-            );
-
-            DecidingLogoPanel.sprite = logoDisplayImageSaved;
-
-        },
-        "Select an image",   // ✅ title (string)
-        "image/*");
+        DecidingLogoPanel.sprite = logoDisplayImageSaved;
     }
 
     public void CloseUploadImagePanel()
