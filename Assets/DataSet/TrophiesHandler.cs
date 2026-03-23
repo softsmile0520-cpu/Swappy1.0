@@ -95,6 +95,9 @@ public class TrophiesHandler : MonoBehaviour
 
         string jsonString = PlayerPrefs.GetString("trophyVariables", JsonConvert.SerializeObject(trophyVariables));
         trophyVariables = JsonConvert.DeserializeObject<Dictionary<string, int>>(jsonString);
+
+        // Restore name ownership + email list so duplicate-name checks work for existing accounts (legacy installs).
+        PlayerNameRegistry.RebuildOwnerKeysFromEmailList();
     }
     private void Start()
     {

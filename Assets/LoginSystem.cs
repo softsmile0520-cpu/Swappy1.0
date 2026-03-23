@@ -108,6 +108,13 @@ public class LoginSystem : MonoBehaviour
                     PlayerPrefs.DeleteKey(rememberPasswordKey);  // If you are saving password
                 }
 
+                string storedName = PlayerPrefs.GetString(email + "_playerName", "");
+                if (!string.IsNullOrEmpty(storedName) && TrophiesHandler.Instance != null)
+                    TrophiesHandler.Instance.playerName = storedName;
+                PlayerPrefs.SetString("lastLoginEmail", email);
+                if (!string.IsNullOrEmpty(TrophiesHandler.Instance?.playerName))
+                    PlayerNameRegistry.RegisterNameForEmail(email, TrophiesHandler.Instance.playerName);
+
                 PlayerPrefs.Save();
                 ModeSelectionPanelScript.instance.playerInfo.AssignPlayerData();
                 Invoke("LoginPanelDestroy", 1f);

@@ -12,6 +12,8 @@ public class SignupSystem : MonoBehaviour
 
     private string emailPattern = @"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$";
     private string passwordPattern = @"^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$";
+    /// <summary>Same rule as settings: 3–16 chars, letters, numbers, underscores.</summary>
+    private string playerNamePattern = @"^[a-zA-Z0-9_]{3,16}$";
 
     private void Awake()
     {
@@ -66,9 +68,18 @@ public class SignupSystem : MonoBehaviour
             return;
         }
 
-        if (playerName.Length < 2)
+        if (!Regex.IsMatch(playerName, playerNamePattern))
         {
-            feedbackText.text = "Player name must be at least 2 characters.";
+            feedbackText.text = "Use 3-16 characters with letters, numbers, or underscores only";
+            return;
+        }
+
+        // Sync registry from prefs (last login / remembered email + stored _playerName) before checking duplicates.
+        PlayerNameRegistry.RebuildOwnerKeysFromEmailList();
+        // New account: pass null so we only treat the name as free if no other account owns it.
+        if (PlayerNameRegistry.IsNameTakenByAnother(playerName, null))
+        {
+            feedbackText.text = "This name is already in use.  Please choose another one.";
             return;
         }
 
@@ -96,6 +107,8 @@ public class SignupSystem : MonoBehaviour
         PlayerPrefs.Save();
 
         TrophiesHandler.Instance.playerName = playerName;
+        PlayerNameRegistry.RegisterNameForEmail(email, playerName);
+        PlayerPrefs.SetString("lastLoginEmail", email);
         feedbackText.text = "Registration successful!";
         Invoke(nameof(DestroyPanel), 1f);
     }
