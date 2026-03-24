@@ -73,6 +73,7 @@ public class PlayerGameResultData : MonoBehaviour
                 PlayerProfilePic.sprite = GameConfigration.instance.ProfilePic;
                 float a = PlayerPrefs.GetFloat("PicSize", 1);
                 PlayerProfilePic.transform.localScale = new Vector3(a, a, a);
+                SettingPanel.ApplySavedProfilePicPan(PlayerProfilePic.rectTransform);
             }
         }
     }

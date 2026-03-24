@@ -39,9 +39,9 @@ public class SettingPanel : MonoBehaviour
     public TextMeshProUGUI disclaimerCoinCostText;
     /// <summary>Buying panel path: question (1) / cost — same 2500 / 500 as above (assign or auto-found under DisclaimerPanel).</summary>
     public TextMeshProUGUI buyingPanelQuestionCostText;
-    /// <summary>Buying/Disclaimer panel — player&apos;s current coin balance. Often &quot;InBank&quot; (distinct from main profile InBank).</summary>
+    /// <summary>Disclaimer panel — numeric coin balance only. Name the GameObject <b>InBankBalance</b> (or assign here). Do not use the same TMP as the &quot;In Bank&quot; caption.</summary>
     public TextMeshProUGUI disclaimerInBankBalanceText;
-    /// <summary>Main profile UI — coins in bank (top bar).</summary>
+    /// <summary>Main profile UI — coin count on the settings top bar only. Must not be a TMP under DisclaimerPanel (use a separate caption + InBankBalance there).</summary>
     public TextMeshProUGUI InBank;
 
     [Tooltip("TMP for name validation errors (assign your 'Name Error' label here). If empty, auto-finds a child named 'Name Error'.")]
@@ -53,6 +53,16 @@ public class SettingPanel : MonoBehaviour
     private bool _nameErrorLookupDone;
 
     public Slider ImageSize;
+
+    [Header("Upload panel — profile picture pan (L/R and D/U sliders)")]
+    [Tooltip("Horizontal pan (e.g. VolumeControll (1)). Use any Min/Max (0–1 or 0–100); center = 50% of the track.")]
+    public Slider profilePicPanHorizontal;
+    [Tooltip("Vertical pan (e.g. VolumeControll (2)). Use any Min/Max (0–1 or 0–100); center = 50% of the track.")]
+    public Slider profilePicPanVertical;
+    [Tooltip("Half-range in UI units: at slider extremes the image moves this far from center.")]
+    public float profilePicPanRangeX = 100f;
+    public float profilePicPanRangeY = 100f;
+
     public TextAsset SwearWords;
     public Texture2D PlaceholderTexture;
     public List<string> swearWords = new List<string>();
@@ -68,7 +78,41 @@ public class SettingPanel : MonoBehaviour
     public const string MsgNameDisallowed = "Name not allowed. Choose a respectful, safe username.";
     public const string MsgNameInUse = "This name is already in use.  Please choose another one.";
 
+    public const string PrefProfilePicPanOffsetX = "ProfilePicPanOffsetX";
+    public const string PrefProfilePicPanOffsetY = "ProfilePicPanOffsetY";
+    /// <summary>Cached <see cref="DecidingLogoPanel"/> rect size; pan offsets are stored in this space and scaled for other avatars.</summary>
+    public const string PrefProfilePicPanRefW = "ProfilePicPanRefW";
+    public const string PrefProfilePicPanRefH = "ProfilePicPanRefH";
+
     private static readonly Regex s_playerNameRegex = new Regex(@"^[a-zA-Z0-9_]{3,16}$", RegexOptions.Compiled);
+
+    /// <summary>Stores editor preview size so the same pan looks identical on smaller profile avatars.</summary>
+    static void TryUpdateProfilePicPanReferenceCache()
+    {
+        if (instance == null || instance.DecidingLogoPanel == null) return;
+        Rect r = instance.DecidingLogoPanel.rectTransform.rect;
+        if (r.width < 0.001f || r.height < 0.001f) return;
+        PlayerPrefs.SetFloat(PrefProfilePicPanRefW, r.width);
+        PlayerPrefs.SetFloat(PrefProfilePicPanRefH, r.height);
+    }
+
+    /// <summary>Apply saved pan offsets to a profile picture RectTransform (menu, gameplay, etc.). Scales by rect vs editor preview when ref size is cached.</summary>
+    public static void ApplySavedProfilePicPan(RectTransform rt)
+    {
+        if (rt == null) return;
+        float ox = PlayerPrefs.GetFloat(PrefProfilePicPanOffsetX, 0f);
+        float oy = PlayerPrefs.GetFloat(PrefProfilePicPanOffsetY, 0f);
+        float refW = PlayerPrefs.GetFloat(PrefProfilePicPanRefW, 0f);
+        float refH = PlayerPrefs.GetFloat(PrefProfilePicPanRefH, 0f);
+        if (refW < 0.0001f || refH < 0.0001f)
+        {
+            rt.anchoredPosition = new Vector2(ox, oy);
+            return;
+        }
+        float w = Mathf.Max(0.0001f, rt.rect.width);
+        float h = Mathf.Max(0.0001f, rt.rect.height);
+        rt.anchoredPosition = new Vector2(ox * w / refW, oy * h / refH);
+    }
 
     public static SettingPanel ShowUI()
     {
@@ -87,7 +131,7 @@ public class SettingPanel : MonoBehaviour
     {
         ImageSize.value = PlayerPrefs.GetFloat("PicSize", 1);
         playerInfo = Instantiate(PlayerInfoTabPrefab, ProfileBar);
-        InBank.text = TrophiesHandler.Instance.trophyVariables["Coins"] + "";
+        SetMainProfileInBankCoinDisplay();
         logoDisplay.sprite = GameConfigration.instance.ProfilePic;
         int ci = GameConfigration.instance.CountryUiIndex;
         if (GameConfigration.instance.countries != null && GameConfigration.instance.countries.Count > 0)
@@ -109,11 +153,117 @@ public class SettingPanel : MonoBehaviour
             Name.text = TrophiesHandler.Instance.playerName ?? "";
 
         TryBindNameErrorLabel();
+
+        SyncProfilePicPanSlidersFromStoredOffsets();
+        ApplyProfilePicPanToPreviewAndLogo();
+        StartCoroutine(CoRefreshPanSlidersAfterLayout());
+    }
+
+    /// <summary>Sliders under inactive panels need a frame + canvas rebuild to show correct handle at 50%.</summary>
+    IEnumerator CoRefreshPanSlidersAfterLayout()
+    {
+        yield return null;
+        Canvas.ForceUpdateCanvases();
+        SyncProfilePicPanSlidersFromStoredOffsets();
+        ApplyProfilePicPanToPreviewAndLogo();
+        TryUpdateProfilePicPanReferenceCache();
+        PlayerPrefs.Save();
     }
 
     private void Awake()
     {
         TryBindNameErrorLabel();
+        RegisterProfilePicPanSliders();
+    }
+
+    void OnDestroy()
+    {
+        UnregisterProfilePicPanSliders();
+    }
+
+    void RegisterProfilePicPanSliders()
+    {
+        if (profilePicPanHorizontal != null)
+            profilePicPanHorizontal.onValueChanged.AddListener(OnProfilePicPanSliderChanged);
+        if (profilePicPanVertical != null)
+            profilePicPanVertical.onValueChanged.AddListener(OnProfilePicPanSliderChanged);
+    }
+
+    void UnregisterProfilePicPanSliders()
+    {
+        if (profilePicPanHorizontal != null)
+            profilePicPanHorizontal.onValueChanged.RemoveListener(OnProfilePicPanSliderChanged);
+        if (profilePicPanVertical != null)
+            profilePicPanVertical.onValueChanged.RemoveListener(OnProfilePicPanSliderChanged);
+    }
+
+    void OnProfilePicPanSliderChanged(float _)
+    {
+        StoreProfilePicPanFromSliders();
+        ApplyProfilePicPanToPreviewAndLogo();
+    }
+
+    void StoreProfilePicPanFromSliders()
+    {
+        TryUpdateProfilePicPanReferenceCache();
+        float h01 = SliderToNormalized01(profilePicPanHorizontal);
+        float v01 = SliderToNormalized01(profilePicPanVertical);
+        float ox = (h01 - 0.5f) * 2f * profilePicPanRangeX;
+        float oy = (v01 - 0.5f) * 2f * profilePicPanRangeY;
+        PlayerPrefs.SetFloat(PrefProfilePicPanOffsetX, ox);
+        PlayerPrefs.SetFloat(PrefProfilePicPanOffsetY, oy);
+        PlayerPrefs.Save();
+    }
+
+    /// <summary>Maps slider value to 0–1 regardless of Min/Max (e.g. 0–100 vs 0–1).</summary>
+    static float SliderToNormalized01(Slider s)
+    {
+        if (s == null) return 0.5f;
+        float d = s.maxValue - s.minValue;
+        if (Mathf.Approximately(d, 0f)) return 0.5f;
+        return Mathf.Clamp01((s.value - s.minValue) / d);
+    }
+
+    /// <summary>Sets slider from normalized 0–1 (50% = t 0.5), works for Min/Max 0–1 or 0–100.</summary>
+    static void SetSliderFromNormalized01(Slider s, float t01)
+    {
+        if (s == null) return;
+        float v = Mathf.Lerp(s.minValue, s.maxValue, Mathf.Clamp01(t01));
+        s.SetValueWithoutNotify(v);
+    }
+
+    void SyncProfilePicPanSlidersFromStoredOffsets()
+    {
+        float ox = PlayerPrefs.GetFloat(PrefProfilePicPanOffsetX, 0f);
+        float oy = PlayerPrefs.GetFloat(PrefProfilePicPanOffsetY, 0f);
+        float rx = Mathf.Max(0.0001f, profilePicPanRangeX);
+        float ry = Mathf.Max(0.0001f, profilePicPanRangeY);
+        float h = Mathf.Clamp01(ox / (2f * rx) + 0.5f);
+        float v = Mathf.Clamp01(oy / (2f * ry) + 0.5f);
+        SetSliderFromNormalized01(profilePicPanHorizontal, h);
+        SetSliderFromNormalized01(profilePicPanVertical, v);
+    }
+
+    void ApplyProfilePicPanToPreviewAndLogo()
+    {
+        TryUpdateProfilePicPanReferenceCache();
+        if (DecidingLogoPanel != null)
+            ApplySavedProfilePicPan(DecidingLogoPanel.rectTransform);
+        if (logoDisplay != null)
+            ApplySavedProfilePicPan(logoDisplay.rectTransform);
+        SyncProfileBarAvatarWithEditor();
+    }
+
+    /// <summary>Keeps the top profile bar avatar aligned with the upload editor (pan, zoom, and unsaved upload sprite).</summary>
+    void SyncProfileBarAvatarWithEditor()
+    {
+        if (playerInfo == null || playerInfo.ProfilePic == null)
+            return;
+        if (logoDisplayImageSaved != null)
+            playerInfo.ProfilePic.sprite = logoDisplayImageSaved;
+        float a = ImageSize != null ? ImageSize.value : PlayerPrefs.GetFloat("PicSize", 1f);
+        playerInfo.ProfilePic.transform.localScale = new Vector3(a, a, a);
+        ApplySavedProfilePicPan(playerInfo.ProfilePic.rectTransform);
     }
 
     /// <summary>Finds a TMP named "Name Error" (or similar) under this panel so Inspector wiring is optional.</summary>
@@ -403,7 +553,47 @@ public class SettingPanel : MonoBehaviour
         }
     }
 
-    /// <summary>Auto-wires InBank = balance, InBank (1) = price under DisclaimerPanel when references are left empty.</summary>
+    /// <summary>True if <paramref name="t"/> is under a UI branch used for purchase dialogs (not the main profile coin bar).</summary>
+    static bool IsTransformUnderBuyingPanel(Transform t)
+    {
+        while (t != null)
+        {
+            if (t.name == "BuyingPanel") return true;
+            t = t.parent;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Prefab path <c>BuyingPanel/…/Cost/InBank</c> is the static &quot;In Bank&quot; caption — never overwrite with coin count.
+    /// </summary>
+    static bool IsPurchasingUiInBankCaption(TextMeshProUGUI tmp)
+    {
+        if (tmp == null || tmp.gameObject.name != "InBank") return false;
+        if (IsTransformUnderBuyingPanel(tmp.transform)) return true;
+        Transform p = tmp.transform.parent;
+        return p != null && p.name == "Cost";
+    }
+
+    /// <summary>Main profile bar coin count — skips <see cref="InBank"/> if it points at disclaimer/buying caption TMPs.</summary>
+    void SetMainProfileInBankCoinDisplay()
+    {
+        if (InBank == null || TrophiesHandler.Instance == null) return;
+        Transform tr = InBank.transform;
+        if (DisclaimerPanel != null && tr.IsChildOf(DisclaimerPanel.transform))
+            return;
+        if (IsTransformUnderBuyingPanel(tr))
+            return;
+        if (IsPurchasingUiInBankCaption(InBank))
+            return;
+        InBank.text = TrophiesHandler.Instance.trophyVariables["Coins"] + "";
+    }
+
+    /// <summary>
+    /// Auto-wires purchase price (InBank (1)) and balance number under DisclaimerPanel.
+    /// We do <b>not</b> bind GameObjects named <b>InBank</b> — that name is for the static &quot;In Bank&quot; caption.
+    /// Name the numeric balance TMP <b>InBankBalance</b> (or assign <see cref="disclaimerInBankBalanceText"/> in the Inspector).
+    /// </summary>
     private void TryBindDisclaimerBuyingPanelInBankTexts()
     {
         if (DisclaimerPanel == null) return;
@@ -412,8 +602,18 @@ public class SettingPanel : MonoBehaviour
         {
             if (tmp.name == "InBank (1)" && disclaimerCoinCostText == null)
                 disclaimerCoinCostText = tmp;
-            else if (tmp.name == "InBank" && disclaimerInBankBalanceText == null)
+        }
+
+        if (disclaimerInBankBalanceText != null)
+            return;
+
+        foreach (TextMeshProUGUI tmp in DisclaimerPanel.GetComponentsInChildren<TextMeshProUGUI>(true))
+        {
+            if (tmp.name == "InBankBalance" || tmp.name == "BankBalanceAmount" || tmp.name == "CoinBalanceNumber")
+            {
                 disclaimerInBankBalanceText = tmp;
+                break;
+            }
         }
     }
 
@@ -529,7 +729,7 @@ public class SettingPanel : MonoBehaviour
         FixStaleLeadingPriceUnderEntireDisclaimer(purchaseCostCoins);
 
         int balance = TrophiesHandler.Instance != null ? TrophiesHandler.Instance.trophyVariables["Coins"] : 0;
-        if (disclaimerInBankBalanceText != null)
+        if (disclaimerInBankBalanceText != null && !IsPurchasingUiInBankCaption(disclaimerInBankBalanceText))
             disclaimerInBankBalanceText.text = balance.ToString();
     }
 
@@ -543,7 +743,12 @@ public class SettingPanel : MonoBehaviour
         if (buyingPanelQuestionCostText != null)
             buyingPanelQuestionCostText.text = "";
         if (disclaimerInBankBalanceText != null)
-            disclaimerInBankBalanceText.text = "";
+        {
+            if (IsPurchasingUiInBankCaption(disclaimerInBankBalanceText))
+                disclaimerInBankBalanceText.text = "In Bank";
+            else
+                disclaimerInBankBalanceText.text = "";
+        }
         DisclaimerPanel?.SetActive(false);
     }
     public void OpenCountryPanel()
@@ -596,10 +801,11 @@ public class SettingPanel : MonoBehaviour
             float a = PlayerPrefs.GetFloat("PicSize", 1);
             logoDisplay.transform.localScale = new Vector3(a, a, a);
             DecidingLogoPanel.sprite = GameConfigration.instance.ProfilePic;
+            ApplyProfilePicPanToPreviewAndLogo();
             playerInfo.AssignPlayerData();
 
         }
-        InBank.text = TrophiesHandler.Instance.trophyVariables["Coins"] + "";
+        SetMainProfileInBankCoinDisplay();
         ModeSelectionPanelScript.instance.playerInfo.StorePreviousValues();
         CloseDisclaimer();
         TrophiesHandler.Instance.SaveData();
@@ -610,6 +816,9 @@ public class SettingPanel : MonoBehaviour
         {
             UploadImagePanel.SetActive(true);
             OtherThingsPanel.SetActive(false);
+            SyncProfilePicPanSlidersFromStoredOffsets();
+            ApplyProfilePicPanToPreviewAndLogo();
+            StartCoroutine(CoRefreshPanSlidersAfterLayout());
         }
         else
         {
@@ -621,7 +830,11 @@ public class SettingPanel : MonoBehaviour
         float a = ImageSize.value;
         PlayerPrefs.SetFloat("PicSize",a);
         TrophiesHandler.Instance.PicSize = a;
-        DecidingLogoPanel.transform.localScale = new Vector3(a, a, a);
+        if (DecidingLogoPanel != null)
+            DecidingLogoPanel.transform.localScale = new Vector3(a, a, a);
+        if (logoDisplay != null)
+            logoDisplay.transform.localScale = new Vector3(a, a, a);
+        SyncProfileBarAvatarWithEditor();
     }
     Texture2D CopyTextureWithReadable(Texture2D originalTexture)
     {
@@ -696,6 +909,18 @@ public class SettingPanel : MonoBehaviour
         );
 
         DecidingLogoPanel.sprite = logoDisplayImageSaved;
+        ResetProfilePicPanToCenter();
+    }
+
+    /// <summary>New upload: center the crop (50% / 50%) and sync L/R + D/U sliders.</summary>
+    void ResetProfilePicPanToCenter()
+    {
+        PlayerPrefs.SetFloat(PrefProfilePicPanOffsetX, 0f);
+        PlayerPrefs.SetFloat(PrefProfilePicPanOffsetY, 0f);
+        PlayerPrefs.Save();
+        SyncProfilePicPanSlidersFromStoredOffsets();
+        ApplyProfilePicPanToPreviewAndLogo();
+        StartCoroutine(CoRefreshPanSlidersAfterLayout());
     }
 
     public void CloseUploadImagePanel()

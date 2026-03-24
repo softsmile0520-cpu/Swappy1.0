@@ -94,6 +94,7 @@ public class playerDisplayData : MonoBehaviour
                     profilePic.sprite = GameConfigration.instance.ProfilePic;
                     float a = PlayerPrefs.GetFloat("PicSize", 1);
                     profilePic.transform.localScale = new Vector3(a, a, a);
+                    SettingPanel.ApplySavedProfilePicPan(profilePic.rectTransform);
                     for (int k = 0; k < Box.Count; k++)
                     {
                         Box[k].sprite = BGDisplayesSquare[3];

@@ -76,6 +76,7 @@ public class PlayerProfileInfoTab : MonoBehaviour
         float c = PlayerPrefs.GetFloat("PicSize", 1);
         ProfilePic.transform.localScale = new Vector3(c, c, c);
         ProfilePic.sprite = GameConfigration.instance.ProfilePic;
+        SettingPanel.ApplySavedProfilePicPan(ProfilePic.rectTransform);
     }
 
     public void AssignPlayerData()
@@ -139,6 +140,7 @@ public class PlayerProfileInfoTab : MonoBehaviour
         float c = PlayerPrefs.GetFloat("PicSize", 1);
         ProfilePic.transform.localScale = new Vector3(c, c, c);
         ProfilePic.sprite = GameConfigration.instance.ProfilePic;
+        SettingPanel.ApplySavedProfilePicPan(ProfilePic.rectTransform);
     }
     IEnumerator TurnOnAdded(TextMeshProUGUI ChangedValue, int ChnagedValue)
     {
