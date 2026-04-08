@@ -34,7 +34,7 @@ public class TimePanelScript : MonoBehaviour
 
         PlayerSelectionScript.ShowUI();
         backPressed();
-
+                        
     }
     public void goBack()
     {
