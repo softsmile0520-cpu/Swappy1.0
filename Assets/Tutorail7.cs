@@ -60,6 +60,7 @@ public class Tutorail7 : MonoBehaviour
         }
         else if (n == 1)
         {
+            Debug.Log("Loading Vertical 8");
             SceneManager.LoadScene("Vertical 8");
             GameConfigration.instance.PlayerSound(0);
         }

@@ -39,6 +39,38 @@ public class Gamemanager : MonoBehaviour
 
     public List<GameObject> ComboShapes;
 
+    [Header("Placement combo highlight")]
+    [Tooltip("Yellow ring shown on the tile where you placed a token when that placement completes a combo. Import your JPG as Sprite (2D).")]
+    public Sprite placementComboYellowSprite;
+
+    [Tooltip("How long the yellow overlay stays visible (seconds).")]
+    public float placementComboYellowDuration = 0.9f;
+
+    [Tooltip("Local Z in front of the placed token (token is at z≈1).")]
+    public float placementComboYellowLocalZ = 1.15f;
+
+    [Tooltip("Uniform scale for the yellow sprite (1 = fit sprite bounds to token size).")]
+    public float placementComboYellowScale = 1f;
+
+    [Header("Combo spawn highlight (green)")]
+    [Tooltip("Green ring on each tile where a new token is created by the combo. Import your green JPG as Sprite (2D).")]
+    public Sprite comboSpawnGreenSprite;
+
+    [Tooltip("How long each green overlay stays visible (seconds).")]
+    public float comboSpawnGreenDuration = 0.9f;
+
+    [Tooltip("Local Z in front of the new token (token spawns at z≈1).")]
+    public float comboSpawnGreenLocalZ = 1.18f;
+
+    [Tooltip("Uniform scale for the green sprite.")]
+    public float comboSpawnGreenScale = 1f;
+
+    [Tooltip("Sorting order for green overlays (above yellow if same tile).")]
+    public int comboSpawnGreenSortingOrder = 51;
+
+    /// <summary>Set true only when <see cref="CheckCombos"/> is triggered from empty-tile placement (<see cref="Tiles.DoMove"/>).</summary>
+    public bool pendingPlacementComboHighlight;
+
     public Tiles[,] BoardTiles = new Tiles[11, 11];
 
     public List<Tiles> TilesToSpawn = new List<Tiles>();
@@ -281,7 +313,7 @@ public class Gamemanager : MonoBehaviour
                 {
                     GameConfigration.instance.PlayerSound(2);
 
-
+                    pendingPlacementComboHighlight = false;
                     SwapTheSwapies(SelectedSwappy, slctdSwappy);
 
                     CheckCombos();
@@ -564,6 +596,7 @@ public class Gamemanager : MonoBehaviour
         if (ComboChecker)
         {
             print("mil gya");
+            pendingPlacementComboHighlight = false;
             return;
         }
         ComboChecker = true;
@@ -577,6 +610,8 @@ public class Gamemanager : MonoBehaviour
 
         L1 = false; L2=false; L3 = false; L4 = false;
 
+        int comboCountBefore = TotalCombos;
+
         CheckHorizontalShape(currentSwappyTile.rowNum, currentSwappyTile.colNum, 2);
         CheckVerticalShapes(currentSwappyTile.rowNum, currentSwappyTile.colNum, 2);
         CheckDiagnol1Shapes(currentSwappyTile.rowNum, currentSwappyTile.colNum, 2);
@@ -584,6 +619,11 @@ public class Gamemanager : MonoBehaviour
         CheckCrossShapes(currentSwappyTile.rowNum, currentSwappyTile.colNum, 1);
         CheckPlusShapes(currentSwappyTile.rowNum, currentSwappyTile.colNum, 1);
         CheckLShapeShapes(currentSwappyTile.rowNum, currentSwappyTile.colNum, 2);
+
+        bool comboCompleted = TotalCombos > comboCountBefore;
+        if (!smartAIPhase && pendingPlacementComboHighlight && comboCompleted && placementComboYellowSprite != null && currentSwappyTile != null)
+            ShowPlacementComboYellowOverlay(currentSwappyTile);
+        pendingPlacementComboHighlight = false;
 
         yield return new WaitForEndOfFrame();
 
@@ -596,6 +636,12 @@ public class Gamemanager : MonoBehaviour
 
             yield return new WaitForSeconds(0.1f);
             yield return new WaitForEndOfFrame();
+
+            if (comboSpawnGreenSprite != null && TilesToSpawn.Count > 0)
+            {
+                for (int g = 0; g < TilesToSpawn.Count; g++)
+                    ShowComboSpawnGreenOverlay(TilesToSpawn[g]);
+            }
 
             for (int i = 0; i < TilesToSpawn.Count; i++)
             {
@@ -641,14 +687,50 @@ public class Gamemanager : MonoBehaviour
         Destroy(Instantiate(Shape, Pos.transform.position + new Vector3(0, 0, 3), Pos.transform.rotation), 0.8f);
     }
 
+    void ShowPlacementComboYellowOverlay(Tiles tile)
+    {
+        GameObject go = new GameObject("PlacementComboYellow");
+        go.transform.SetParent(tile.transform, false);
+        go.transform.localPosition = new Vector3(0f, 0f, placementComboYellowLocalZ);
+        go.transform.localRotation = Quaternion.identity;
+
+        SpriteRenderer sr = go.AddComponent<SpriteRenderer>();
+        sr.sprite = placementComboYellowSprite;
+        sr.sortingOrder = 50;
+
+        if (placementComboYellowSprite.bounds.size.x > 0.0001f)
+            go.transform.localScale = Vector3.one * (placementComboYellowScale / placementComboYellowSprite.bounds.size.x);
+
+        Destroy(go, placementComboYellowDuration);
+    }
+
+    void ShowComboSpawnGreenOverlay(Tiles tile)
+    {
+        if (tile == null || comboSpawnGreenSprite == null)
+            return;
+
+        GameObject go = new GameObject("ComboSpawnGreen");
+        go.transform.SetParent(tile.transform, false);
+        go.transform.localPosition = new Vector3(0f, 0f, comboSpawnGreenLocalZ);
+        go.transform.localRotation = Quaternion.identity;
+
+        SpriteRenderer sr = go.AddComponent<SpriteRenderer>();
+        sr.sprite = comboSpawnGreenSprite;
+        sr.sortingOrder = comboSpawnGreenSortingOrder;
+
+        if (comboSpawnGreenSprite.bounds.size.x > 0.0001f)
+            go.transform.localScale = Vector3.one * (comboSpawnGreenScale / comboSpawnGreenSprite.bounds.size.x);
+
+        Destroy(go, comboSpawnGreenDuration);
+    }
+
     public void CheckHorizontalShape(int row, int col, int depth)
     {
 
         Tiles _tileTemp;
         if (!IsAvailableAndMineSwappy(row, col))
             return;
-        int min = col - 2, max = col +
- 2;
+        int min = col - 2, max = col + 2;
         int totalSwappies = 0;
         bool hasIncludedOriginal = false;
 

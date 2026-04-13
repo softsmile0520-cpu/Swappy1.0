@@ -117,6 +117,6 @@ public class ModeSelectionPanelScript : MonoBehaviour
     }
     public void TutorialsButton()
     {
-        SceneManager.LoadScene("Tutorial1");
+        SceneManager.LoadScene("Vertical 8");
     }
 }

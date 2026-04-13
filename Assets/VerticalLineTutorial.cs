@@ -28,6 +28,8 @@ public class VerticalLineTutorial : MonoBehaviour
 
 
     public GameObject swappy;
+    public GameObject swappy1;
+    public GameObject swappy2;
 
     //shape1Tiles
     public GameObject SwappyPlaced;
@@ -115,7 +117,7 @@ public class VerticalLineTutorial : MonoBehaviour
     {
         HandContainer.SetActive(false);
 
-        GameObject player = Instantiate(swappy);
+        GameObject player = Instantiate(swappy1);
         player.transform.position = SwappyPlaced.transform.position + new Vector3(0, 0, -1);
         player.transform.DOScale(new Vector3(1f, 1f, 1f), 0.09f);
 
@@ -128,37 +130,37 @@ public class VerticalLineTutorial : MonoBehaviour
         //StartCoroutine(IncreaseTextSizeOverTime());
         ScoreDiff1.SetActive(true);
 
-        GameObject player1 = Instantiate(swappy);
+        GameObject player1 = Instantiate(swappy2);
         player1.transform.position = Tile1.transform.position + new Vector3(0, 0, -1);
         player1.transform.DOScale(new Vector3(1f, 1f, 1f), 0.09f);
 
         GameConfigration.instance.PlayerSound(2);
 
-        GameObject player2 = Instantiate(swappy);
+        GameObject player2 = Instantiate(swappy2);
         player2.transform.position = Tile2.transform.position + new Vector3(0, 0, -1);
         player2.transform.DOScale(new Vector3(1f, 1f, 1f), 0.09f);
 
         GameConfigration.instance.PlayerSound(2);
 
-        GameObject player3 = Instantiate(swappy);
+        GameObject player3 = Instantiate(swappy2);
         player3.transform.position = Tile3.transform.position + new Vector3(0, 0, -1);
         player3.transform.DOScale(new Vector3(1f, 1f, 1f), 0.09f);
 
         GameConfigration.instance.PlayerSound(2);
 
-        GameObject player4 = Instantiate(swappy);
+        GameObject player4 = Instantiate(swappy2);
         player4.transform.position = Tile4.transform.position + new Vector3(0, 0, -1);
         player4.transform.DOScale(new Vector3(1f, 1f, 1f), 0.09f);
 
         GameConfigration.instance.PlayerSound(2);
 
-        GameObject player5 = Instantiate(swappy);
+        GameObject player5 = Instantiate(swappy2);
         player5.transform.position = Tile5.transform.position + new Vector3(0, 0, -1);
         player5.transform.DOScale(new Vector3(1f, 1f, 1f), 0.09f);
 
         GameConfigration.instance.PlayerSound(2);
 
-        GameObject player6 = Instantiate(swappy);
+        GameObject player6 = Instantiate(swappy2);
         player6.transform.position = Tile6.transform.position + new Vector3(0, 0, -1);
         player6.transform.DOScale(new Vector3(1f, 1f, 1f), 0.09f);
 

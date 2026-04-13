@@ -153,6 +153,7 @@ public class Tiles : MonoBehaviour
                 GameConfigration.instance.PlayerSound(2);
 
             SpawnSwappy();
+            Gamemanager.instance.pendingPlacementComboHighlight = true;
             Gamemanager.instance.CheckCombos();
 
             Gamemanager.instance.IntrectAble = false;
