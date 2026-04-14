@@ -71,6 +71,10 @@ public class Gamemanager : MonoBehaviour
     /// <summary>Set true only when <see cref="CheckCombos"/> is triggered from empty-tile placement (<see cref="Tiles.DoMove"/>).</summary>
     public bool pendingPlacementComboHighlight;
 
+    /// <summary>Set when <see cref="CheckCombos"/> runs after swapping your swappy with an opponent's; <see cref="swapHighlightPartnerTile"/> is your tile before the swap (the other tile is <see cref="currentSwappyTile"/> after <see cref="SwapTheSwapies"/>).</summary>
+    bool pendingSwapWithOpponentHighlight;
+    Tiles swapHighlightPartnerTile;
+
     public Tiles[,] BoardTiles = new Tiles[11, 11];
 
     public List<Tiles> TilesToSpawn = new List<Tiles>();
@@ -314,6 +318,8 @@ public class Gamemanager : MonoBehaviour
                     GameConfigration.instance.PlayerSound(2);
 
                     pendingPlacementComboHighlight = false;
+                    swapHighlightPartnerTile = SelectedSwappy.MyTile;
+                    pendingSwapWithOpponentHighlight = true;
                     SwapTheSwapies(SelectedSwappy, slctdSwappy);
 
                     CheckCombos();
@@ -597,6 +603,8 @@ public class Gamemanager : MonoBehaviour
         {
             print("mil gya");
             pendingPlacementComboHighlight = false;
+            pendingSwapWithOpponentHighlight = false;
+            swapHighlightPartnerTile = null;
             return;
         }
         ComboChecker = true;
@@ -621,9 +629,19 @@ public class Gamemanager : MonoBehaviour
         CheckLShapeShapes(currentSwappyTile.rowNum, currentSwappyTile.colNum, 2);
 
         bool comboCompleted = TotalCombos > comboCountBefore;
-        if (!smartAIPhase && pendingPlacementComboHighlight && comboCompleted && placementComboYellowSprite != null && currentSwappyTile != null)
-            ShowPlacementComboYellowOverlay(currentSwappyTile);
+        if (!smartAIPhase && placementComboYellowSprite != null)
+        {
+            if (pendingSwapWithOpponentHighlight && swapHighlightPartnerTile != null && currentSwappyTile != null)
+            {
+                ShowPlacementComboYellowOverlay(swapHighlightPartnerTile);
+                ShowPlacementComboYellowOverlay(currentSwappyTile);
+            }
+            else if (pendingPlacementComboHighlight && comboCompleted && currentSwappyTile != null)
+                ShowPlacementComboYellowOverlay(currentSwappyTile);
+        }
         pendingPlacementComboHighlight = false;
+        pendingSwapWithOpponentHighlight = false;
+        swapHighlightPartnerTile = null;
 
         yield return new WaitForEndOfFrame();
 
